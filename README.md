@@ -1,6 +1,6 @@
 # Sidebar table
 
-[screenshot](https://github.com/TRIAEIOU/sidebar-table/blob/main/Screenshots/screenshot.jpg?raw=true)
+![screenshot](https://github.com/TRIAEIOU/sidebar-table/blob/main/Screenshots/screenshot.jpg?raw=true)
 
 Anki addon to move the browser card/note table to the sidebar to maximize the editor area.
 
