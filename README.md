@@ -4,6 +4,12 @@
 
 Anki addon to move the browser card/note table to the sidebar to maximize the editor area.
 
+## Warning
+
+On first run it may be that the note/card table is not visible, if so try to find the splitter position at the bottom of the sidebar (look for when the cursor changes to "splitter") to adjust the splitter position (it is remembered between sessions).
+
+The addon is not super well tested (for instance I don't know what happens if you rotate the screen) but it shouldn't break anything, just disable the addon.
+
 ## Remarks
 
 The implementation is some rather hacky monkey patching but simple enough. Will likely break sooner or later but should be fairly simple to correct.
