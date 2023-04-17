@@ -6,6 +6,7 @@ LABEL = "sidebar-table"
 
 #########################################################################
 def move(browser: browser):
+    """Move table to sidebar (inserting a splitter), saving/restoring splitter state"""
     # Direct copy from [browser.py](https://github.com/ankitects/anki/blob/8abcb77d9536da10a00cbe15f3149bb00c6deee0/qt/aqt/browser/browser.py#L536)
     # Only change is how to get a hold of the widget holding the table (marked below)
     def on_all_or_selected_rows_changed(self) -> None:
@@ -22,7 +23,7 @@ def move(browser: browser):
         self.singleCard = bool(self.card)
 
         # Modification: replace `self.form.splitter.widget(1).setVisible(self.singleCard)` with
-        self.sidebar_table["container"].setVisible(self.singleCard)
+        table.setVisible(self.singleCard)
 
         if self.singleCard:
             self.editor.set_note(self.card.note(), focusTo=self.focusTo)
@@ -35,18 +36,27 @@ def move(browser: browser):
         self._update_selection_actions()
         gui_hooks.browser_did_change_row(self)
 
-    tablew =  browser.table._view.parent()
+    table = browser.table._view
+    root =  table.parent()
+    grid = browser.form.gridLayout
+    switch = grid.itemAtPosition(0, 0).widget()
+    search = grid.itemAtPosition(0, 1).widget()
+    grid.removeWidget(switch)
+    grid.removeWidget(search)
+    layout = root.layout()
+    layout.removeItem(grid)
+    layout.addWidget(switch)
+    layout.addWidget(search)
+    layout.removeWidget(table)
+    layout.addWidget(table)
+
     splitter = qt.QSplitter(browser.sidebarDockWidget)
     splitter.setOrientation(Qt.Orientation.Vertical)
-    sbw = browser.sidebarDockWidget.widget()
-    splitter.addWidget(sbw)
-    splitter.addWidget(tablew)
+    splitter.addWidget(browser.sidebarDockWidget.widget())
+    splitter.addWidget(root)
+    root.setMinimumHeight(100)
     restoreSplitter(splitter, LABEL)
     browser.sidebarDockWidget.setWidget(splitter)
-    browser.sidebar_table = { # custom prop to store info
-        "container": tablew,
-        "splitter": splitter
-    }
     browser.on_all_or_selected_rows_changed = lambda: on_all_or_selected_rows_changed(browser)
     closeEvent = browser.closeEvent
     browser.closeEvent = lambda evt: (saveSplitter(splitter, LABEL), closeEvent(evt))[1]

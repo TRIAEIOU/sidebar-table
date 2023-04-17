@@ -36,11 +36,25 @@ def move(browser: browser):
         self._update_selection_actions()
         gui_hooks.browser_did_change_row(self)
 
-    table =  browser.table._view.parent()
+    table = browser.table._view
+    root =  table.parent()
+    grid = browser.form.gridLayout
+    switch = grid.itemAtPosition(0, 0).widget()
+    search = grid.itemAtPosition(0, 1).widget()
+    grid.removeWidget(switch)
+    grid.removeWidget(search)
+    layout = root.layout()
+    layout.removeItem(grid)
+    layout.addWidget(switch)
+    layout.addWidget(search)
+    layout.removeWidget(table)
+    layout.addWidget(table)
+
     splitter = qt.QSplitter(browser.sidebarDockWidget)
     splitter.setOrientation(Qt.Orientation.Vertical)
     splitter.addWidget(browser.sidebarDockWidget.widget())
-    splitter.addWidget(table)
+    splitter.addWidget(root)
+    root.setMinimumHeight(100)
     restoreSplitter(splitter, LABEL)
     browser.sidebarDockWidget.setWidget(splitter)
     browser.on_all_or_selected_rows_changed = lambda: on_all_or_selected_rows_changed(browser)
