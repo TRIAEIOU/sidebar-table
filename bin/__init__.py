@@ -1,8 +1,10 @@
 from aqt import qt, browser, gui_hooks, Qt
 from aqt.utils import saveSplitter, restoreSplitter
 from anki.consts import *
+from .version import *
 
 LABEL = "sidebar-table"
+NVER = "1.0.1"
 
 #########################################################################
 def move(browser: browser):
@@ -49,6 +51,8 @@ def move(browser: browser):
     layout.addWidget(search)
     layout.removeWidget(table)
     layout.addWidget(table)
+    layout.addStretch(100)
+
 
     splitter = qt.QSplitter(browser.sidebarDockWidget)
     splitter.setOrientation(Qt.Orientation.Vertical)
@@ -63,3 +67,5 @@ def move(browser: browser):
 
 # Main ##################################################################
 gui_hooks.browser_will_show.append(move)
+
+if strvercmp(NVER, get_version()) > 0: set_version(NVER)
