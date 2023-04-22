@@ -4,7 +4,7 @@ from anki.consts import *
 from .version import *
 
 LABEL = "sidebar-table"
-NVER = "1.0.1"
+NVER = "1.0.2"
 
 #########################################################################
 def move(browser: browser):
@@ -25,7 +25,7 @@ def move(browser: browser):
         self.singleCard = bool(self.card)
 
         # Modification: replace `self.form.splitter.widget(1).setVisible(self.singleCard)` with
-        table.setVisible(self.singleCard)
+        self.form.fieldsArea.parent().setVisible(self.singleCard)
 
         if self.singleCard:
             self.editor.set_note(self.card.note(), focusTo=self.focusTo)
@@ -38,6 +38,7 @@ def move(browser: browser):
         self._update_selection_actions()
         gui_hooks.browser_did_change_row(self)
 
+    # Remove table parent widget and reorder the layout
     table = browser.table._view
     root =  table.parent()
     grid = browser.form.gridLayout
@@ -51,19 +52,44 @@ def move(browser: browser):
     layout.addWidget(search)
     layout.removeWidget(table)
     layout.addWidget(table)
-    layout.addStretch(100)
+    layout.setStretch(0, 0)
+    layout.setStretch(1, 0)
+    layout.setStretch(2, 100)
+    layout.addStretch(1)
 
-
+    # Create new splitter and add to sidebar
     splitter = qt.QSplitter(browser.sidebarDockWidget)
     splitter.setOrientation(Qt.Orientation.Vertical)
     splitter.addWidget(browser.sidebarDockWidget.widget())
     splitter.addWidget(root)
-    root.setMinimumHeight(100)
+    root.setMinimumHeight(0)
     restoreSplitter(splitter, LABEL)
     browser.sidebarDockWidget.setWidget(splitter)
+    splitter.setHandleWidth(5)
     browser.on_all_or_selected_rows_changed = lambda: on_all_or_selected_rows_changed(browser)
     closeEvent = browser.closeEvent
     browser.closeEvent = lambda evt: (saveSplitter(splitter, LABEL), closeEvent(evt))[1]
+
+    # Ensure tag field is minimized
+    browser.editor.web.eval('''(async () => {
+        function min(pane) {
+            if (pane.style.cssText.match(/--pane-size:\s*[1-9]/))
+                document.querySelector('.horizontal-resizer').dispatchEvent(new MouseEvent('dblclick'))
+        }
+        await NoteEditor
+        let pane = document.querySelector('.horizontal-resizer + div .pane[style*="--pane-size:"]')
+        if (!pane) {
+            const obs = new MutationObserver((muts, obs) => {
+                pane = document.querySelector('.horizontal-resizer + div .pane[style*="--pane-size:"]')
+                if (pane) {
+                    obs.disconnect()
+                    min(pane)
+                }
+            })
+            obs.observe(document.body, {childList: true, subtree: true})
+        } else min(pane)
+    })()
+    ''')
 
 # Main ##################################################################
 gui_hooks.browser_will_show.append(move)

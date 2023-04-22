@@ -18,29 +18,46 @@ The above screenshot is achieved with [Markdown input](https://ankiweb.net/share
 
 ```css
 /* editor.css */
+div > div.editor-field {
+  border-radius: unset;
+  border: none !important;
+  box-shadow: none !important;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 5px;
+}
+div:not(:nth-child(1)) > .field-container {
+  border-top: 1px solid var(--border);
+}
+
+.editor-toolbar .button-toolbar {
+  border: none;
+  padding: 7px 7px 0px 7px;
+  margin: 0px;
+}
+
+.editor-field {
+  --fg: #3b3b3b;
+  --selected-bg: #ADD6FF80;
+}
+.night_mode .editor-field {
+  --fg: #d4d4d4;
+  --selected-bg: #ADD6FF26;
+}
+
+body {
+  --fg: #3b3b3b;
+  --canvas: #ffffff;
+  --canvas-elevated: #ffffff;
+  --border: #CECECE;
+  --border-focus: 1px solid #3794ff;
+}
 body.night_mode {
   --fg: #858585;
   --canvas: #1e1e1e;
   --canvas-elevated: #1e1e1e;
   --border: #474747;
   --border-focus: 1px solid #3794ff;
-}
-.night_mode .editor-field {
-  border-radius: unset;
-  border: none;
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-bottom: 5px;
-  --fg: #d4d4d4;
-  --selected-bg: #ADD6FF26;
-}
-.night_mode div:not(:nth-child(1)) > .field-container {
-  border-top: 1px solid var(--border);
-}
-
-.night_mode .editor-toolbar {
-  border: none;
-  padding: 2px 0 0 0;
 }
 ```
 
@@ -53,3 +70,8 @@ anki-editable.night_mode {
   font-size: 18px;
 }
 ```
+
+## Changelog
+
+- 23-04-18: Fix splitter handle and stretch.
+- 23-04-22: Fix multi card/note select bug. Add logic that minimizes tag field on browser show.
