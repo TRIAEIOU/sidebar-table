@@ -2,7 +2,7 @@
 
 ![screenshot](https://github.com/TRIAEIOU/sidebar-table/blob/main/Screenshots/screenshot.jpg?raw=true)
 
-[Anki](https://apps.ankiweb.net) addon ([Github](https://github.com/TRIAEIOU/sidebar-table)) to move the browser card/note table to the sidebar to maximize the editor area.
+[Anki](https://apps.ankiweb.net) addon ([Github](https://github.com/TRIAEIOU/sidebar-table)) to allow moving the browser card/note table to the sidebar to maximize the editor area by menu (`Browser` → `View` → `Toggle table position`) or shortcut (configurable, default `Ctrl+Alt+Shift+B`).
 
 ## Warning
 
@@ -74,4 +74,4 @@ anki-editable.night_mode {
 ## Changelog
 
 - 23-04-18: Fix splitter handle and stretch.
-- 23-04-22: Fix multi card/note select bug. Add logic that minimizes tag field on browser show.
+- 23-04-22: Fix multi card/note select bug. Add logic that minimizes tag field on browser show. Add toggle menu entry and shortcut.

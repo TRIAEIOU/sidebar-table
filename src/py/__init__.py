@@ -1,76 +1,77 @@
 from aqt import qt, browser, gui_hooks, Qt
 from aqt.utils import saveSplitter, restoreSplitter
+from aqt.browser.layout import BrowserLayout
 from anki.consts import *
 from .version import *
 
-LABEL = "sidebar-table"
-NVER = "1.0.2"
+LBL = "sidebar-table"
+NVER = "1.1.0"
 
 #########################################################################
-def move(browser: browser):
+def move_to_side(browser: browser):
     """Move table to sidebar (inserting a splitter), saving/restoring splitter state"""
-    # Direct copy from [browser.py](https://github.com/ankitects/anki/blob/8abcb77d9536da10a00cbe15f3149bb00c6deee0/qt/aqt/browser/browser.py#L536)
-    # Only change is how to get a hold of the widget holding the table (marked below)
-    def on_all_or_selected_rows_changed(self) -> None:
-        """Called after the selected or all rows (searching, toggling mode) have
-        changed. Update window title, card preview, context actions, and editor.
-        """
-        if self._closeEventHasCleanedUp:
-            return
 
-        self.updateTitle()
-        # if there is only one selected card, use it in the editor
-        # it might differ from the current card
-        self.card = self.table.get_single_selected_card()
-        self.singleCard = bool(self.card)
-
-        # Modification: replace `self.form.splitter.widget(1).setVisible(self.singleCard)` with
-        self.form.fieldsArea.parent().setVisible(self.singleCard)
-
-        if self.singleCard:
-            self.editor.set_note(self.card.note(), focusTo=self.focusTo)
-            self.focusTo = None
-            self.editor.card = self.card
-        else:
-            self.editor.set_note(None)
-        self._renderPreview()
-        self._update_row_actions()
-        self._update_selection_actions()
-        gui_hooks.browser_did_change_row(self)
-
-    # Remove table parent widget and reorder the layout
+    # Remove table
     table = browser.table._view
-    root =  table.parent()
     grid = browser.form.gridLayout
     switch = grid.itemAtPosition(0, 0).widget()
     search = grid.itemAtPosition(0, 1).widget()
     grid.removeWidget(switch)
     grid.removeWidget(search)
-    layout = root.layout()
-    layout.removeItem(grid)
+
+    # Create new layout and pane
+    layout = qt.QVBoxLayout()
     layout.addWidget(switch)
     layout.addWidget(search)
-    layout.removeWidget(table)
     layout.addWidget(table)
     layout.setStretch(0, 0)
     layout.setStretch(1, 0)
     layout.setStretch(2, 100)
     layout.addStretch(1)
+    layout.setContentsMargins(5, 0, 0, 5)
+    pane = qt.QWidget(browser)
+    pane.setLayout(layout)
 
-    # Create new splitter and add to sidebar
+    # Create new splitter and add to sidebar with pane
+    sidebar_widget = browser.sidebarDockWidget.widget()
     splitter = qt.QSplitter(browser.sidebarDockWidget)
     splitter.setOrientation(Qt.Orientation.Vertical)
-    splitter.addWidget(browser.sidebarDockWidget.widget())
-    splitter.addWidget(root)
-    root.setMinimumHeight(0)
-    restoreSplitter(splitter, LABEL)
+    splitter.addWidget(sidebar_widget)
+    splitter.addWidget(pane)
+    restoreSplitter(splitter, LBL)
     browser.sidebarDockWidget.setWidget(splitter)
     splitter.setHandleWidth(5)
-    browser.on_all_or_selected_rows_changed = lambda: on_all_or_selected_rows_changed(browser)
     closeEvent = browser.closeEvent
-    browser.closeEvent = lambda evt: (saveSplitter(splitter, LABEL), closeEvent(evt))[1]
+    browser.closeEvent = lambda evt: (saveSplitter(splitter, LBL), closeEvent(evt))[1]
 
-    # Ensure tag field is minimized
+    # Hide empty top
+    browser.form.splitter.widget(0).setHidden(True)
+    browser.form.splitter.handle(1).setHidden(True)
+
+
+#########################################################################
+def move_to_top(browser: browser):
+    """Move table to "normal" top position"""
+    splitter = browser.sidebarDockWidget.widget()
+    saveSplitter(splitter, LBL)
+    sb = splitter.widget(0)
+    switch = splitter.widget(1).layout().takeAt(0).widget()
+    search = splitter.widget(1).layout().takeAt(0).widget()
+    table = splitter.widget(1).layout().takeAt(0).widget()
+
+    grid = browser.form.gridLayout
+    grid.addWidget(switch, 0, 0)
+    grid.addWidget(search, 0, 1)
+    browser.form.verticalLayout_2.addWidget(table)
+    browser.sidebarDockWidget.setWidget(sb)
+
+    # Show top and restore layout
+    browser.form.splitter.widget(0).setHidden(False)
+    browser.form.splitter.handle(1).setHidden(False)
+
+#########################################################################
+def minimize_tags(browser):
+    """Minimize tag editor"""
     browser.editor.web.eval('''(async () => {
         function min(pane) {
             if (pane.style.cssText.match(/--pane-size:\s*[1-9]/))
@@ -88,10 +89,39 @@ def move(browser: browser):
             })
             obs.observe(document.body, {childList: true, subtree: true})
         } else min(pane)
-    })()
-    ''')
+    })()''')
+
+#########################################################################
+def toggle(browser):
+    if browser.form.splitter.widget(0).isHidden():
+        move_to_top(browser)
+        CFG['State'] = 'top'
+    else:
+        move_to_side(browser)
+        if CFG["Autominimize"] == True:
+            minimize_tags(browser)
+        CFG['State'] = 'side'
+    mw.addonManager.writeConfig(__name__, CFG)
+
+
+#########################################################################
+def setup(browser: browser):
+    if CFG["State"] == 'side':
+        toggle(browser)
+
+
+#########################################################################
+def setup_menu(browser: browser):
+    menu = browser.form.menuqt_accel_view
+    a = menu.addAction('Toggle table position')
+    a.triggered.connect(lambda _, browser=browser: toggle(browser))
+    if CFG["Shortcut"]:
+        a.setShortcut(qt.QKeySequence(CFG["Shortcut"]))
+
 
 # Main ##################################################################
-gui_hooks.browser_will_show.append(move)
+CFG = mw.addonManager.getConfig(__name__)
+gui_hooks.browser_will_show.append(setup)
+gui_hooks.browser_menus_did_init.append(setup_menu)
 
 if strvercmp(NVER, get_version()) > 0: set_version(NVER)
